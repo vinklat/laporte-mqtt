@@ -1,0 +1,3 @@
+socketIO-client
+paho-mqtt
+pyyaml
