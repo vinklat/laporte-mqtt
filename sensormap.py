@@ -2,7 +2,7 @@ import json
 import logging
 
 # create logger
-logger = logging.getLogger('switchboard-mqtt.sensormap')
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
 class Gateway():
@@ -82,7 +82,7 @@ class SensorMap():
         self.sensor_id_map = {}
 
         for gw in self.gateways:
-            logger.info('Socket.IO room join: {}'.format(gw))
+            logging.info('Socket.IO room join: {}'.format(gw))
             sio_client.emit("join", {'room': gw})
 
     def subscribe_gateways(self, mqtt_client):
@@ -93,7 +93,7 @@ class SensorMap():
             if (gw.schema == 'key-text'):
                 topic += '/+'
 
-            logger.info('MQTT subscribe {}: {}'.format(gw_name, topic))
+            logging.info('MQTT subscribe {}: {}'.format(gw_name, topic))
             mqtt_client.subscribe(topic)
 
     def setup_sensors(self, gw_name, config_list):
@@ -102,7 +102,7 @@ class SensorMap():
 
             s = Sensor(**data, schema=gw.schema)
             if s.incomplete():
-                logger.debug("skip {}".format(data))
+                logging.debug("skip {}".format(data))
                 continue
 
             if gw.subscribe_prefix:
@@ -113,14 +113,14 @@ class SensorMap():
                 if gw.schema == 'key-text':
                     topic_recv += "/{}".format(s.key)
                     self.map_topic2sensor[topic_recv] = s
-                    logger.debug("topic {} --> sensor {}.{}".format(
+                    logging.debug("topic {} --> sensor {}.{}".format(
                         topic_recv, s.node_id, s.sensor_id))
 
                 elif gw.schema == 'json':
                     if not topic_recv in self.map_topic2node:
                         self.map_topic2node[topic_recv] = {}
                     self.map_topic2node[topic_recv][s.key] = s
-                    logger.debug(
+                    logging.debug(
                         "topic {} + json key {} --> sensor {}.{}".format(
                             topic_recv, s.key, s.node_id, s.sensor_id))
 
@@ -135,7 +135,7 @@ class SensorMap():
                     self.map_sensor2topic[s.node_id] = {}
 
                 self.map_sensor2topic[s.node_id][s.sensor_id] = topic_send
-                logger.debug("known actuator {}.{} --> {}".format(
+                logging.debug("known actuator {}.{} --> {}".format(
                     s.node_id, s.sensor_id, topic_send))
         return 0
 
@@ -144,13 +144,10 @@ class SensorMap():
         if msg.topic in self.map_topic2sensor:
             s = self.map_topic2sensor[msg.topic]
             s.value = msg.payload.decode("ascii")
-
-            logger.info("MQTT message from {}".format(msg.topic))
             yield s
 
         #json
         elif msg.topic in self.map_topic2node:
-            logger.info("MQTT message from {}".format(msg.topic))
             values = json.loads(msg.payload)
 
             for key, s in self.map_topic2node[msg.topic].items():
@@ -159,7 +156,5 @@ class SensorMap():
                     yield s
 
         else:
-            logger.info(
-                "MQTT message from {} (UNKNOWN sensor) payload: {}".format(
-                    msg.topic, msg.payload.decode("ascii")))
+            logging.debug('UNKNOWN sensor')
             range(0)  #yield nothing

@@ -7,6 +7,9 @@ import logging
 import threading
 from sensormap import SensorMap
 
+# create logger
+logger = logging.getLogger(__name__)
+
 ##
 ## cmd line argument parser
 ##
@@ -81,16 +84,12 @@ parser.add_argument(
 pars = parser.parse_args()
 
 ##
-## create logger
+## set logger
 ##
 
-logger = logging.getLogger('switchboard-mqtt')
-logger.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(pars.log_level)
-formatter = logging.Formatter('%(levelname)s %(name)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
+logging.basicConfig(
+    format='%(levelname)s %(module)s: %(message)s', level=pars.log_level)
+logging.getLogger('urllib3').setLevel(logging.INFO)
 
 ##
 ## connect Socket.IO
@@ -191,7 +190,7 @@ mqtt_client.on_connect = on_connect
 def on_message(client, userdata, msg):
     '''receive message from MQTT, if there is metric from known sensor, send it to switchboard'''
 
-    logger.debug("mqtt message: {} {}".format(msg.topic, msg.payload))
+    logger.debug("MQTT message: {} {}".format(msg.topic, msg.payload))
 
     metrics = {}
 
@@ -204,7 +203,8 @@ def on_message(client, userdata, msg):
         if not s.sensor_id in metrics[s.node_id]:
             metrics[s.node_id][s.sensor_id] = s.value
 
-    sio_namespace.emit('sensor_response', metrics)
+    if metrics:
+        sio_namespace.emit('sensor_response', metrics)
 
 
 mqtt_client.on_message = on_message
@@ -222,8 +222,13 @@ def infiniteloop2():
     mqtt_client.loop_forever()
 
 
-thread1 = threading.Thread(target=infiniteloop1)
-thread1.start()
+def main():
+    thread1 = threading.Thread(target=infiniteloop1)
+    thread1.start()
 
-thread2 = threading.Thread(target=infiniteloop2)
-thread2.start()
+    thread2 = threading.Thread(target=infiniteloop2)
+    thread2.start()
+
+
+if __name__ == '__main__':
+    main()
