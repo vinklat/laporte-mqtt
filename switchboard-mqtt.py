@@ -4,6 +4,7 @@ import paho.mqtt.client as mqtt
 import yaml
 import json
 import logging
+import time
 import threading
 from sensormap import SensorMap
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 ## cmd line argument parser
 ##
 
-parser = ArgumentParser(description='switchboard-mqtt')
+parser = ArgumentParser(description='MQTT connector for switchboard')
 parser.add_argument(
     '-H',
     '--switchboard-host',
@@ -100,7 +101,7 @@ try:
         pars.sio_addr,
         pars.sio_port,
         hurry_interval_in_seconds=10,
-        wait_for_connection=False)
+        wait_for_connection=True)
 except:
     logger.error("can't connect to switchboard ({}:{})".format(
         pars.sio_addr, pars.sio_port))
@@ -123,6 +124,8 @@ with open(pars.mqtt_fname, 'r') as stream:
 
 class SensorsNamespace(BaseNamespace):
     '''class-based Socket.IO event handlers'''
+
+    nconnects = 0
 
     def on_actuator_response(self, *data):
         '''receive metrics of changed actuators, send it to MQTT'''
@@ -154,37 +157,50 @@ class SensorsNamespace(BaseNamespace):
         logger.info("sio status response: {}".format(data))
 
     def on_connect(self):
-        logger.debug("sio connect:")
+        self.nconnects += 1
+        logger.debug("sio connected OK")
+
+    def on_reconnect(self):
+        self.nconnects += 1
+        logger.debug("sio reconnected OK")
+
+    def on_disconnect(self):
+        logger.debug("sio disconnected")
+
+    def on_error(self):
+        logger.debug("sio error")
 
 
 sio_namespace = sio_client.define(SensorsNamespace, '/sensors')
-m.join_gateways(sio_namespace)
-
-##
-## connect MQTT
-##
-
-mqtt_client = mqtt.Client()
-try:
-    mqtt_client.connect(pars.mqtt_addr, pars.mqtt_port, 60)
-except:
-    logger.error("can't connect to mqtt broker ({}:{})".format(
-        pars.mqtt_addr, pars.mqtt_port))
-    exit(1)
-
-##
-## MQTT
-##
 
 
-def on_connect(mqtt_client, userdata, flags, rc):
-    logger.info("mqtt connected (status code {})".format(int(rc)))
+def on_connect(client, userdata, flags, rc):
+    '''
+    rc values:
+    0: Connection successful
+    1: Connection refused – incorrect protocol version
+    2: Connection refused – invalid client identifier
+    3: Connection refused – server unavailable
+    4: Connection refused – bad username or password
+    5: Connection refused – not authorised
+    6-255: Currently unused.
+    '''
+    if rc == 0:
+        client.connected_flag = True
+        logger.info("MQTT connected OK")
+        #after connect subscribe to MQTT topics
+        m.subscribe_gateways(mqtt_client)
+    else:
+        logger.error("MQTT connect: code={}".format(rc))
 
-    #after connect subscribe to MQTT topics
-    m.subscribe_gateways(mqtt_client)
+
+def on_disconnect(client, userdata, rc):
+    client.connected_flag = False
+    logger.error("MQTT disconnect: code={}".format(rc))
 
 
-mqtt_client.on_connect = on_connect
+def on_publish(client, userdata, mid):
+    logger.debug("MQTT published: mid={}".format(mid))
 
 
 def on_message(client, userdata, msg):
@@ -207,6 +223,11 @@ def on_message(client, userdata, msg):
         sio_namespace.emit('sensor_response', metrics)
 
 
+mqtt.Client.connected_flag = False
+mqtt_client = mqtt.Client("switchboard-mqtt")
+mqtt_client.on_connect = on_connect
+mqtt_client.on_disconnect = on_disconnect
+mqtt_client.on_publish = on_publish
 mqtt_client.on_message = on_message
 
 ##
@@ -214,19 +235,44 @@ mqtt_client.on_message = on_message
 ##
 
 
-def infiniteloop1():
-    sio_client.wait()
+def mqtt_loop():
+    logger.info("conecting to mqtt broker ({}:{})".format(
+        pars.mqtt_addr, pars.mqtt_port))
+
+    try:
+        mqtt_client.connect(pars.mqtt_addr, pars.mqtt_port, 60)
+    except:
+        pass
+
+    mqtt_client.loop_start()
+
+    while True:
+        while not mqtt_client.connected_flag:
+            logger.debug("MQTT connect wait")
+            time.sleep(10)
 
 
-def infiniteloop2():
-    mqtt_client.loop_forever()
+def sio_loop():
+    last_nconnects = 0
+
+    while True:
+        if sio_namespace.nconnects > last_nconnects:
+            m.join_gateways(sio_namespace)
+            last_nconnects = sio_namespace.nconnects
+
+        sio_client.wait(seconds=1)
+
+
+##
+## start server loops
+##
 
 
 def main():
-    thread1 = threading.Thread(target=infiniteloop1)
+    thread1 = threading.Thread(target=mqtt_loop)
     thread1.start()
 
-    thread2 = threading.Thread(target=infiniteloop2)
+    thread2 = threading.Thread(target=sio_loop)
     thread2.start()
 
 
