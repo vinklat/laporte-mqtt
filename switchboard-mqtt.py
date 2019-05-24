@@ -224,7 +224,8 @@ def on_message(client, userdata, msg):
 
 
 mqtt.Client.connected_flag = False
-mqtt_client = mqtt.Client("switchboard-mqtt")
+mqtt_client = mqtt.Client(
+    __file__ + '_{0:010x}'.format(int(time.time() * 256))[:10])
 mqtt_client.on_connect = on_connect
 mqtt_client.on_disconnect = on_disconnect
 mqtt_client.on_publish = on_publish
