@@ -7,5 +7,5 @@ WORKDIR /switchboard-mqtt
 COPY conf/*yml /switchboard-mqtt/conf/
 COPY *.py /switchboard-mqtt/
 
-ENTRYPOINT [ "python", "./switchboard-mqtt.py" ]
+ENTRYPOINT [ "python", "switchboard-mqtt.py" ]
 

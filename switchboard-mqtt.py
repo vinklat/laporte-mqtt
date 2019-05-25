@@ -45,9 +45,17 @@ parser.add_argument(
     '--mqtt-broker-port',
     action='store',
     dest='mqtt_port',
-    help='mqtt port port',
+    help='mqtt broker port',
     type=int,
     default=1883)
+parser.add_argument(
+    '-k',
+    '--mqtt-keepalive',
+    action='store',
+    dest='mqtt_keepalive',
+    help='mqtt keepalive',
+    type=int,
+    default=30)
 parser.add_argument(
     '-c',
     '--mqtt-config',
@@ -241,7 +249,8 @@ def mqtt_loop():
         pars.mqtt_addr, pars.mqtt_port))
 
     try:
-        mqtt_client.connect(pars.mqtt_addr, pars.mqtt_port, 60)
+        mqtt_client.connect(pars.mqtt_addr, pars.mqtt_port,
+                            pars.mqtt_keepalive)
     except:
         pass
 
