@@ -260,6 +260,7 @@ def mqtt_loop():
         while not mqtt_client.connected_flag:
             logger.debug("MQTT connect wait")
             time.sleep(10)
+        time.sleep(1)
 
 
 def sio_loop():
