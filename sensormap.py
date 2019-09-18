@@ -87,7 +87,11 @@ class SensorMap():
 
     def subscribe_gateways(self, mqtt_client):
         for gw_name, gw in self.gateways.items():
-            topic = '{}/{}/{}'.format(gw.subscribe_prefix, gw.subscribe_addr,
+
+            if gw.subscribe_suffix == '':
+                topic = '{}/{}'.format(gw.subscribe_prefix, gw.subscribe_addr)
+            else:
+                topic = '{}/{}/{}'.format(gw.subscribe_prefix, gw.subscribe_addr,
                                       gw.subscribe_suffix)
 
             if (gw.schema == 'key-text'):
