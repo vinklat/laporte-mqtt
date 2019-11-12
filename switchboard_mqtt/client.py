@@ -1,133 +1,33 @@
-from socketIO_client import SocketIO, BaseNamespace
-from argparse import ArgumentParser, ArgumentTypeError
-import paho.mqtt.client as mqtt
+# -*- coding: utf-8 -*-
+'''threaded client of Socket.IO switchboard server and MQTT server'''
+
 import yaml
 import json
 import logging
 import time
 import threading
-from sensormap import SensorMap
+import paho.mqtt.client as mqtt
+from socketIO_client import SocketIO, BaseNamespace
+from switchboard_mqtt.argparser import get_pars
+from switchboard_mqtt.sensormap import SensorMap
 
 # create logger
 logger = logging.getLogger(__name__)
 
-##
-## cmd line argument parser
-##
+# get parameters from command line arguments
+pars = get_pars()
 
-parser = ArgumentParser(description='MQTT connector for switchboard')
-parser.add_argument(
-    '-H',
-    '--switchboard-host',
-    action='store',
-    dest='sio_addr',
-    help='switchboard socket.io host address',
-    type=str,
-    default="127.0.0.1")
-parser.add_argument(
-    '-P',
-    '--switchboard-port',
-    action='store',
-    dest='sio_port',
-    help='switchboard socket.io port',
-    type=int,
-    default=9128)
-parser.add_argument(
-    '-q',
-    '--mqtt-broker-host',
-    action='store',
-    dest='mqtt_addr',
-    help='mqtt broker host address',
-    type=str,
-    default="127.0.0.1")
-parser.add_argument(
-    '-p',
-    '--mqtt-broker-port',
-    action='store',
-    dest='mqtt_port',
-    help='mqtt broker port',
-    type=int,
-    default=1883)
-parser.add_argument(
-    '-k',
-    '--mqtt-keepalive',
-    action='store',
-    dest='mqtt_keepalive',
-    help='mqtt keepalive',
-    type=int,
-    default=30)
-parser.add_argument(
-    '-c',
-    '--mqtt-config',
-    action='store',
-    dest='mqtt_fname',
-    help='mqtt config yaml file',
-    type=str,
-    default='conf/gateways.yml')
-
-LOG_LEVEL_STRINGS = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG']
-
-
-def log_level_string_to_int(log_level_string):
-    if not log_level_string in LOG_LEVEL_STRINGS:
-        message = 'invalid choice: {0} (choose from {1})'.format(
-            log_level_string, LOG_LEVEL_STRINGS)
-        raise ArgumentTypeError(message)
-
-    log_level_int = getattr(logging, log_level_string, logging.INFO)
-    # check the logging log_level_choices have not changed from our expected values
-    assert isinstance(log_level_int, int)
-
-    return log_level_int
-
-
-parser.add_argument(
-    '-l',
-    '--log-level',
-    action='store',
-    dest='log_level',
-    help='set the logging output level. {0}'.format(LOG_LEVEL_STRINGS),
-    type=log_level_string_to_int,
-    default='INFO')
-
-pars = parser.parse_args()
-
-##
-## set logger
-##
-
-logging.basicConfig(
-    format='%(levelname)s %(module)s: %(message)s', level=pars.log_level)
+# set logger
+logging.basicConfig(format='%(levelname)s %(module)s: %(message)s',
+                    level=pars.log_level)
 logging.getLogger('urllib3').setLevel(logging.INFO)
 
-##
-## connect Socket.IO
-##
+# create cofiguration data container
+sensor_map = SensorMap()
 
-try:
-    sio_client = SocketIO(
-        pars.sio_addr,
-        pars.sio_port,
-        hurry_interval_in_seconds=10,
-        wait_for_connection=True)
-except:
-    logger.error("can't connect to switchboard ({}:{})".format(
-        pars.sio_addr, pars.sio_port))
-    exit(1)
-
-m = SensorMap()
-
-#read config file and parse yaml to config_dict
-with open(pars.mqtt_fname, 'r') as stream:
-    try:
-        config_dict = yaml.load(stream)
-    except yaml.YAMLError as exc:
-        logger.error(exc)
-    m.add_gateways(config_dict)
-
-##
-## Socket.IO
-##
+# define mqtt client and set client name
+mqtt_client = mqtt.Client(__file__ +
+                          '_{0:010x}'.format(int(time.time() * 256))[:10])
 
 
 class SensorsNamespace(BaseNamespace):
@@ -142,7 +42,8 @@ class SensorsNamespace(BaseNamespace):
         for node_id, node_data in json.loads(data[0]).items():
             for sensor_id, value in node_data.items():
                 try:
-                    topic_send = m.map_sensor2topic[node_id][sensor_id]
+                    topic_send = sensor_map.map_sensor2topic[node_id][
+                        sensor_id]
                 except KeyError:
                     logger.error("addr/key not configured! ({}.{})".format(
                         node_id, sensor_id))
@@ -157,7 +58,7 @@ class SensorsNamespace(BaseNamespace):
 
         gw = next(iter(data[0]))
         logger.debug("{} config response from switchboard:".format(gw))
-        m.setup_sensors(gw, data[0][gw])
+        sensor_map.setup_sensors(gw, data[0][gw])
 
     def on_status_response(self, *data):
         '''receive and log status message from switchboard'''
@@ -179,6 +80,43 @@ class SensorsNamespace(BaseNamespace):
         logger.debug("sio error")
 
 
+def sio_connect():
+    '''connect to switchboard server'''
+
+    try:
+        sio_client = SocketIO(pars.sio_addr,
+                              pars.sio_port,
+                              hurry_interval_in_seconds=10,
+                              wait_for_connection=True)
+    except:
+        logger.error("can't connect to switchboard ({}:{})".format(
+            pars.sio_addr, pars.sio_port))
+        exit(1)
+
+    return sio_client
+
+
+def get_config():
+    '''read config file and parse yaml to config_dict'''
+
+    try:
+        with open(pars.mqtt_fname, 'r') as stream:
+            try:
+                config_dict = yaml.load(stream)
+            except yaml.YAMLError as exc:
+                logger.error(exc)
+                exit(1)
+        return config_dict
+    except FileNotFoundError as exc:
+        logger.critical(exc)
+        exit(1)
+
+
+# read config file and fill sensor map container
+sensor_map.add_gateways(get_config())
+
+# create Socket.IO client
+sio_client = sio_connect()
 sio_namespace = sio_client.define(SensorsNamespace, '/sensors')
 
 
@@ -197,9 +135,9 @@ def on_connect(client, userdata, flags, rc):
         client.connected_flag = True
         logger.info("MQTT connected OK")
         #after connect subscribe to MQTT topics
-        m.subscribe_gateways(mqtt_client)
+        sensor_map.subscribe_gateways(mqtt_client)
     else:
-        logger.error("MQTT connect: code={}".format(rc))
+        logger.error("MQTT connect ERROR: code={}".format(rc))
 
 
 def on_disconnect(client, userdata, rc):
@@ -218,7 +156,7 @@ def on_message(client, userdata, msg):
 
     metrics = {}
 
-    for s in m.get_sensors(msg):
+    for s in sensor_map.get_sensors(msg):
         logger.info("{}.{} = {}".format(s.node_id, s.sensor_id, s.value))
 
         if not s.node_id in metrics:
@@ -231,20 +169,15 @@ def on_message(client, userdata, msg):
         sio_namespace.emit('sensor_response', metrics)
 
 
-mqtt.Client.connected_flag = False
-mqtt_client = mqtt.Client(
-    __file__ + '_{0:010x}'.format(int(time.time() * 256))[:10])
-mqtt_client.on_connect = on_connect
-mqtt_client.on_disconnect = on_disconnect
-mqtt_client.on_publish = on_publish
-mqtt_client.on_message = on_message
-
-##
-## start server loops
-##
-
-
 def mqtt_loop():
+    '''main loop for MQTT client'''
+
+    mqtt.Client.connected_flag = False
+    mqtt_client.on_connect = on_connect
+    mqtt_client.on_disconnect = on_disconnect
+    mqtt_client.on_publish = on_publish
+    mqtt_client.on_message = on_message
+
     logger.info("conecting to mqtt broker ({}:{})".format(
         pars.mqtt_addr, pars.mqtt_port))
 
@@ -257,35 +190,34 @@ def mqtt_loop():
     mqtt_client.loop_start()
 
     while True:
+        nattempts = 0
         while not mqtt_client.connected_flag:
-            logger.debug("MQTT connect wait")
+            if nattempts > 0:
+                logger.error(
+                    "MQTT connect wait (attempt={})".format(nattempts))
             time.sleep(10)
+            nattempts += 1
         time.sleep(1)
 
 
 def sio_loop():
+    '''main loop for Socket.IO client'''
+
     last_nconnects = 0
 
     while True:
         if sio_namespace.nconnects > last_nconnects:
-            m.join_gateways(sio_namespace)
+            sensor_map.join_gateways(sio_namespace)
             last_nconnects = sio_namespace.nconnects
 
         sio_client.wait(seconds=1)
 
 
-##
-## start server loops
-##
-
-
 def main():
+    '''start main loops'''
+
     thread1 = threading.Thread(target=mqtt_loop)
     thread1.start()
 
     thread2 = threading.Thread(target=sio_loop)
     thread2.start()
-
-
-if __name__ == '__main__':
-    main()

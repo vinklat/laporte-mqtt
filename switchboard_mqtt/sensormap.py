@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+''''objects that collect mqtt prefixes for sensors'''
+
 import json
 import logging
 
@@ -65,6 +68,8 @@ class SensorMap():
         self.map_sensor2topic = {}
         self.mqtt_subscibe_prefixes = []
         self.sio_rooms = []
+        self.sensor_addr_map = {}
+        self.sensor_id_map = {}
 
     def __add_gw(self, gw):
         self.gateways[gw.name] = gw
@@ -91,10 +96,11 @@ class SensorMap():
             if gw.subscribe_suffix == '':
                 topic = '{}/{}'.format(gw.subscribe_prefix, gw.subscribe_addr)
             else:
-                topic = '{}/{}/{}'.format(gw.subscribe_prefix, gw.subscribe_addr,
-                                      gw.subscribe_suffix)
+                topic = '{}/{}/{}'.format(gw.subscribe_prefix,
+                                          gw.subscribe_addr,
+                                          gw.subscribe_suffix)
 
-            if (gw.schema == 'key-text'):
+            if gw.schema == 'key-text':
                 topic += '/+'
 
             logging.info('MQTT subscribe {}: {}'.format(gw_name, topic))
