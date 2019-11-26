@@ -4,7 +4,7 @@
 from platform import python_version
 import pkg_resources
 
-__version__ = '0.1.0'
+__version__ = '0.2.0rc0'
 
 
 def get_build_info():
@@ -14,8 +14,8 @@ def get_build_info():
         __version__,
         'python':
         python_version(),
-        'socketIO-client':
-        pkg_resources.get_distribution("socketIO-client").version,
+        'python-socketio':
+        pkg_resources.get_distribution("python-socketio").version,
         'paho-mqtt':
         pkg_resources.get_distribution("paho-mqtt").version
     }

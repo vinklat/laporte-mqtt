@@ -1,8 +1,29 @@
+---
+
 rflink:
-    subscribe_prefix: 'rflink'
-    subscribe_addr: '+/+'
-    subscribe_suffix: 'R'
-    publish_prefix: 'rflink'
-    publish_suffix: 'W'
-    schema: key-text
+    subscribe:
+        schema: 'value'
+        topic: 'rflink/+/+/R/+'
+        pattern: 'rflink/{}/R/{}'
+    publish:
+        schema: 'value'
+        pattern: 'rflink/{}/W/{}'
+        
+zigbee:
+    subscribe:
+        schema: 'json'
+        topic: 'zigbee/+'
+        pattern: 'zigbee/{}'
+    publish:
+        schema: 'json'
+        pattern: 'zigbee/{}/set'
+
+tasmota:
+    subscribe:
+        topic: 'tasmota/stat/+/POWER'
+        pattern: 'tasmota/stat/{}/{}'
+        schema: 'value'
+    publish:
+        schema: 'value'
+        pattern: 'tasmota/cmnd/{}/{}'
 

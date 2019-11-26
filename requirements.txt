@@ -1,3 +1,4 @@
-socketIO-client
+python-socketio[client]
 paho-mqtt
 pyyaml
+-e git+https://github.com/vinklat/switchboard@dev#egg=switchboard

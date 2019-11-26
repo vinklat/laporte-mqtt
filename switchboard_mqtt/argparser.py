@@ -64,10 +64,10 @@ def get_pars():
                         type=int,
                         default=30)
     parser.add_argument('-c',
-                        '--mqtt-config',
+                        '--gateways-config',
                         action='store',
-                        dest='mqtt_fname',
-                        help='mqtt config yaml file',
+                        dest='gw_fname',
+                        help='yaml file with mqtt config of gateways',
                         type=str,
                         default='conf/gateways.yml')
 
