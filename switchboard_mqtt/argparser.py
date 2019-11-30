@@ -49,7 +49,7 @@ def get_pars():
                         help='mqtt broker host address',
                         type=str,
                         default="127.0.0.1")
-    parser.add_argument('-p',
+    parser.add_argument('-r',
                         '--mqtt-broker-port',
                         action='store',
                         dest='mqtt_port',
@@ -60,7 +60,7 @@ def get_pars():
                         '--mqtt-keepalive',
                         action='store',
                         dest='mqtt_keepalive',
-                        help='mqtt keepalive',
+                        help='mqtt keepalive seconds',
                         type=int,
                         default=30)
     parser.add_argument('-c',
@@ -70,6 +70,13 @@ def get_pars():
                         help='yaml file with mqtt config of gateways',
                         type=str,
                         default='conf/gateways.yml')
+    parser.add_argument('-p',
+                        '--exporter-port',
+                        action='store',
+                        dest='port',
+                        help='prometheus metrics expose port',
+                        type=int,
+                        default=9129)
 
     parser.add_argument('-V',
                         '--version',

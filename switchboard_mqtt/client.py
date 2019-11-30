@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0411, C0412, C0413, C0103
+# pylint: disable=C0411, C0412, C0413, C0103, E1101
 '''client of Socket.IO switchboard server and MQTT server'''
 
 import json
@@ -8,12 +8,20 @@ import time
 import threading
 import re
 import paho.mqtt.client as mqtt
-from switchboard.client import SwitchboardClient
+from prometheus_client import start_http_server, Summary, Counter
+from switchboard.client import SwitchboardClient, c_connects_total
 from switchboard_mqtt.argparser import get_pars
 from switchboard_mqtt.config import GatewaysConfig, SCHEMA_JSON, SCHEMA_VALUE
 
 # create logger
 logger = logging.getLogger(__name__)
+
+# Create a metric to track time spent and requests made.
+MESSAGE_TIME = Summary('switchboard_mqtt_message_seconds',
+                       'Time spent processing MQTT message', [])
+
+EMIT_COUNT = Counter('switchboard_mqtt_emits_total',
+                     'Total count of MQTT emits', [])
 
 # get parameters from command line arguments
 pars = get_pars()
@@ -56,8 +64,8 @@ def publish_actuator(gateway, node_addr, keys):
             mqtt_client.publish(topic, value)
 
 
-switchboard = SwitchboardClient(pars.sio_addr, pars.sio_port)
-switchboard.set_gateways(list(gateways.get_names()))
+switchboard = SwitchboardClient(pars.sio_addr, pars.sio_port,
+                                list(gateways.get_names()))
 switchboard.ns_metrics.actuator_addr_handler = publish_actuator
 
 
@@ -77,12 +85,15 @@ def on_connect(client, userdata, flags, rc):
     if rc == 0:
         client.connected_flag = True
         logger.info("MQTT connected OK")
-        logger.debug("client=%s, userdata=%s, flags=%s, rc=%s", client,
-                     userdata, flags, rc)
+        logger.debug("userdata=%s, flags=%s, rc=%s", userdata, flags, rc)
 
+        # subscribe mqtt topics
         for gateway in gateways.get():
             logger.info("MQTT subscribe %s", gateway.subscribe_topic)
             mqtt_client.subscribe(gateway.subscribe_topic)
+
+        # connects / reconnects counter
+        c_connects_total.labels('mqtt').inc()
     else:
         logger.error("MQTT connect ERROR: code=%s", rc)
 
@@ -92,21 +103,24 @@ def on_disconnect(client, userdata, rc):
 
     client.connected_flag = False
     logger.error("MQTT disconnect")
-    logger.debug("client=%s, userdata=%s, rc=%s", client, userdata, rc)
+    logger.debug("userdata=%s, rc=%s", userdata, rc)
 
 
 def on_publish(client, userdata, mid):
     '''fired upon a message published'''
 
-    logger.debug("MQTT published: client=%s, userdata=%s, mid=%c", client,
-                 userdata, mid)
+    del client  # Ignored parameter
+    EMIT_COUNT.inc()
+    logger.debug("MQTT published: userdata=%s, mid=%s", userdata, mid)
 
 
+@MESSAGE_TIME.time()
 def on_message(client, userdata, msg):
     '''receive message from MQTT'''
 
+    del client  # Ignored parameter
     logger.info("MQTT receive: %s %s", msg.topic, msg.payload)
-    logger.debug("client=%s, userdata=%s", client, userdata)
+    logger.debug("userdata=%s", userdata)
 
     for gateway in gateways.get():
         pattern = gateway.subscribe_pattern.format("(.*)", "(.*)")
@@ -158,6 +172,9 @@ def mqtt_loop():
 
 def main():
     '''start main loops'''
+
+    # start up the server to expose promnetheus metrics.
+    start_http_server(pars.port)
 
     thread1 = threading.Thread(target=mqtt_loop)
     thread1.start()
