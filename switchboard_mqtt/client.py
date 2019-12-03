@@ -65,7 +65,7 @@ def publish_actuator(gateway, node_addr, keys):
 
 
 switchboard = SwitchboardClient(pars.sio_addr, pars.sio_port,
-                                list(gateways.get_names()))
+                                gateways=list(gateways.get_names()))
 switchboard.ns_metrics.actuator_addr_handler = publish_actuator
 
 
