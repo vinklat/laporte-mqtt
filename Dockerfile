@@ -2,10 +2,10 @@ FROM python:3-alpine
 
 COPY requirements.txt /
 
-RUN apk --update add tzdata git \
+RUN apk --update add --virtual build-dependencies build-base tzdata \
   && cp /usr/share/zoneinfo/Etc/UTC /etc/localtime \
   && pip install -r /requirements.txt \
-  && apk del git \
+  && apk del build-dependencies tzdata \
   && rm -fR /root/.cache
 
 WORKDIR /tmp/x
