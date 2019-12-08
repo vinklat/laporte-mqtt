@@ -9,11 +9,11 @@ RUN apk --update add tzdata git \
   && rm -fR /root/.cache
 
 WORKDIR /tmp/x
-COPY switchboard_mqtt/*py ./switchboard_mqtt/
+COPY laporte_mqtt/*py ./laporte_mqtt/
 COPY setup.py README.md MANIFEST.in LICENSE requirements.txt ./
 RUN  pip install . 
 
-WORKDIR /switchboard-mqtt
+WORKDIR /laporte-mqtt
 COPY conf/*yml ./conf/
 
-ENTRYPOINT [ "switchboard-mqtt" ]
+ENTRYPOINT [ "laporte-mqtt" ]

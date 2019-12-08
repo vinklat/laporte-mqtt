@@ -2,4 +2,4 @@ python-socketio[client]
 paho-mqtt
 pyyaml
 prometheus_client
--e git+https://github.com/vinklat/switchboard@dev#egg=switchboard
+laporte

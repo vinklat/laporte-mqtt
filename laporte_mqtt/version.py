@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''switchboard_mqtt app version and resources info'''
+'''laporte_mqtt app version and resources info'''
 
 from platform import python_version
 import pkg_resources
@@ -10,7 +10,7 @@ __version__ = '0.2.0rc0'
 def get_build_info():
     '''get app version and resources info'''
     ret = {
-        'switchboard-mqtt':
+        'laporte-mqtt':
         __version__,
         'python':
         python_version(),

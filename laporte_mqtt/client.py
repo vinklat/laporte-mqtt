@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C0411, C0412, C0413, C0103, E1101
-'''client of Socket.IO switchboard server and MQTT server'''
+'''client of Socket.IO laporte server and MQTT server'''
 
 import json
 import logging
@@ -9,18 +9,18 @@ import threading
 import re
 import paho.mqtt.client as mqtt
 from prometheus_client import start_http_server, Summary, Counter
-from switchboard.client import SwitchboardClient, c_connects_total
-from switchboard_mqtt.argparser import get_pars
-from switchboard_mqtt.config import GatewaysConfig, SCHEMA_JSON, SCHEMA_VALUE
+from laporte.client import LaporteClient, c_connects_total
+from laporte_mqtt.argparser import get_pars
+from laporte_mqtt.config import GatewaysConfig, SCHEMA_JSON, SCHEMA_VALUE
 
 # create logger
 logger = logging.getLogger(__name__)
 
 # Create a metric to track time spent and requests made.
-MESSAGE_TIME = Summary('switchboard_mqtt_message_seconds',
+MESSAGE_TIME = Summary('laporte_mqtt_message_seconds',
                        'Time spent processing MQTT message', [])
 
-EMIT_COUNT = Counter('switchboard_mqtt_emits_total',
+EMIT_COUNT = Counter('laporte_mqtt_emits_total',
                      'Total count of MQTT emits', [])
 
 # get parameters from command line arguments
@@ -40,14 +40,14 @@ else:
 gateways = GatewaysConfig(pars.gw_fname)
 
 # define mqtt client and set client name
-mqtt_client = mqtt.Client('switchboard-mqtt_' +
+mqtt_client = mqtt.Client('laporte-mqtt_' +
                           '{0:010x}'.format(int(time.time() * 256))[:10])
 
 
 def publish_actuator(gateway, node_addr, keys):
     '''function launched upon an actuator response'''
 
-    logging.info("Switchboard receive: {'%s': %s}", node_addr, keys)
+    logging.info("Laporte receive: {'%s': %s}", node_addr, keys)
 
     gateway = gateways.find_gateway(gateway)
 
@@ -64,9 +64,9 @@ def publish_actuator(gateway, node_addr, keys):
             mqtt_client.publish(topic, value)
 
 
-switchboard = SwitchboardClient(pars.sio_addr, pars.sio_port,
+laporte = LaporteClient(pars.sio_addr, pars.sio_port,
                                 gateways=list(gateways.get_names()))
-switchboard.ns_metrics.actuator_addr_handler = publish_actuator
+laporte.ns_metrics.actuator_addr_handler = publish_actuator
 
 
 def on_connect(client, userdata, flags, rc):
@@ -140,7 +140,7 @@ def on_message(client, userdata, msg):
                 break
 
     if matchObj:
-        switchboard.emit("sensor_addr_response", message)
+        laporte.emit("sensor_addr_response", message)
     else:
         logger.warning("MQTT topic %s not match any gateway", msg.topic)
 
@@ -179,5 +179,5 @@ def main():
     thread1 = threading.Thread(target=mqtt_loop)
     thread1.start()
 
-    thread2 = threading.Thread(target=switchboard.loop)
+    thread2 = threading.Thread(target=laporte.loop)
     thread2.start()

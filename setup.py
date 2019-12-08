@@ -9,7 +9,7 @@ except:
     long_description = "README.md not found"
 
 try:
-    exec(open('switchboard_mqtt/version.py').read())
+    exec(open('laporte_mqtt/version.py').read())
 except:
     __version__ = 'v.not.found'
 
@@ -21,14 +21,14 @@ except:
 
 
 setuptools.setup(
-    name="switchboard-mqtt",
+    name="laporte-mqtt",
     version=__version__,
     author="Václav Vinklát",
     author_email="vin@email.cz",
-    description="MQTT connector for switchboard.",
+    description="MQTT connector for laporte.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/vinklat/switchboard-mqtt",
+    url="https://github.com/vinklat/laporte-mqtt",
     include_package_data=True,
     zip_safe=False,
     packages=setuptools.find_packages(),
@@ -39,5 +39,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     entry_points={
-        'console_scripts': ['switchboard-mqtt=switchboard_mqtt.client:main'],
+        'console_scripts': ['laporte-mqtt=laporte_mqtt.client:main'],
     })

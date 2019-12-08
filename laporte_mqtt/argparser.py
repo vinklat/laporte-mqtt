@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-'''cmd line argument parser for switchboard_mqtt'''
+'''cmd line argument parser for laporte_mqtt'''
 
 import logging
 from argparse import ArgumentParser, ArgumentTypeError
-from switchboard_mqtt.version import __version__, get_build_info
+from laporte_mqtt.version import __version__, get_build_info
 
 _LOG_LEVEL_STRINGS = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG']
 
@@ -27,19 +27,19 @@ def log_level_string_to_int(arg_string):
 def get_pars():
     '''get parameters from from command line arguments'''
 
-    parser = ArgumentParser(description='MQTT connector for switchboard')
+    parser = ArgumentParser(description='MQTT connector for laporte')
     parser.add_argument('-H',
-                        '--switchboard-host',
+                        '--laporte-host',
                         action='store',
                         dest='sio_addr',
-                        help='switchboard socket.io host address',
+                        help='laporte socket.io host address',
                         type=str,
                         default="127.0.0.1")
     parser.add_argument('-P',
-                        '--switchboard-port',
+                        '--laporte-port',
                         action='store',
                         dest='sio_port',
-                        help='switchboard socket.io port',
+                        help='laporte socket.io port',
                         type=int,
                         default=9128)
     parser.add_argument('-q',

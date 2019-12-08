@@ -1,3 +1,3 @@
-# switchboard-mqtt
+# laporte-mqtt
 
-MQTT connector for [switchboard](https://github.com/vinklat/switchboard).
+MQTT connector for [laporte](https://github.com/vinklat/laporte).
