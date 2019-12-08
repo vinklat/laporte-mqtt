@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 MESSAGE_TIME = Summary('laporte_mqtt_message_seconds',
                        'Time spent processing MQTT message', [])
 
-EMIT_COUNT = Counter('laporte_mqtt_emits_total',
-                     'Total count of MQTT emits', [])
+EMIT_COUNT = Counter('laporte_mqtt_emits_total', 'Total count of MQTT emits',
+                     [])
 
 # get parameters from command line arguments
 pars = get_pars()
@@ -64,8 +64,9 @@ def publish_actuator(gateway, node_addr, keys):
             mqtt_client.publish(topic, value)
 
 
-laporte = LaporteClient(pars.sio_addr, pars.sio_port,
-                                gateways=list(gateways.get_names()))
+laporte = LaporteClient(pars.sio_addr,
+                        pars.sio_port,
+                        gateways=list(gateways.get_names()))
 laporte.ns_metrics.actuator_addr_handler = publish_actuator
 
 

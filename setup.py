@@ -19,25 +19,24 @@ try:
 except:
     required = []
 
-
-setuptools.setup(
-    name="laporte-mqtt",
-    version=__version__,
-    author="Václav Vinklát",
-    author_email="vin@email.cz",
-    description="MQTT connector for laporte.",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/vinklat/laporte-mqtt",
-    include_package_data=True,
-    zip_safe=False,
-    packages=setuptools.find_packages(),
-    install_reqs = required,
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
-    ],
-    entry_points={
-        'console_scripts': ['laporte-mqtt=laporte_mqtt.client:main'],
-    })
+setuptools.setup(name="laporte-mqtt",
+                 version=__version__,
+                 author="Václav Vinklát",
+                 author_email="vin@email.cz",
+                 description="MQTT connector for Laporte.",
+                 long_description=long_description,
+                 long_description_content_type="text/markdown",
+                 url="https://github.com/vinklat/laporte-mqtt",
+                 include_package_data=True,
+                 zip_safe=False,
+                 packages=setuptools.find_packages(),
+                 install_requires=required,
+                 classifiers=[
+                     "Programming Language :: Python :: 3",
+                     "License :: OSI Approved :: MIT License",
+                     "Operating System :: OS Independent",
+                 ],
+                 entry_points={
+                     'console_scripts':
+                     ['laporte-mqtt=laporte_mqtt.client:main'],
+                 })
