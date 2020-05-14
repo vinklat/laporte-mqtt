@@ -70,6 +70,13 @@ def get_pars():
                         help='yaml file with mqtt config of gateways',
                         type=str,
                         default='conf/gateways.yml')
+    parser.add_argument('-a',
+                        '--exporter-address',
+                        action='store',
+                        dest='addr',
+                        help='prometheus metrics listen address',
+                        type=str,
+                        default='')
     parser.add_argument('-p',
                         '--exporter-port',
                         action='store',

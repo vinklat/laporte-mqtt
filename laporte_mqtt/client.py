@@ -175,7 +175,7 @@ def main():
     '''start main loops'''
 
     # start up the server to expose promnetheus metrics.
-    start_http_server(pars.port)
+    start_http_server(pars.port, addr=pars.addr)
 
     thread1 = threading.Thread(target=mqtt_loop)
     thread1.start()
