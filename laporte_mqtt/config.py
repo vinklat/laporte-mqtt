@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-arguments, too-few-public-methods
 '''objects that collect mqtt prefixes setup for sensors'''
 
 import sys
 import logging
-import yaml
+from yaml import safe_load, YAMLError
 
 SCHEMA_JSON = 0
 SCHEMA_VALUE = 1
@@ -14,7 +15,6 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 class GatewayConfig():
     '''mqtt setup of one gateway'''
-
     def __init__(self,
                  name,
                  subscribe_topic='#',
@@ -33,7 +33,6 @@ class GatewayConfig():
 
 class GatewaysConfig():
     '''container to store mqtt setup from config file'''
-
     @staticmethod
     def load_config(filename):
         '''read config file and parse yaml to config_dict'''
@@ -43,8 +42,8 @@ class GatewaysConfig():
         try:
             with open(filename, 'r') as stream:
                 try:
-                    config_dict = yaml.load(stream)
-                except yaml.YAMLError as exc:
+                    config_dict = safe_load(stream)
+                except YAMLError as exc:
                     logging.error(exc)
                     sys.exit(1)
         except FileNotFoundError as exc:
@@ -57,14 +56,10 @@ class GatewaysConfig():
             for direction in ['subscribe', 'publish']:
                 if direction in gateway_setup:
                     if 'topic' in gateway_setup[direction]:
-                        params[direction +
-                               "_topic"] = gateway_setup[direction]['topic']
+                        params[direction + "_topic"] = gateway_setup[direction]['topic']
 
                     if 'schema' in gateway_setup[direction]:
-                        schemas_map = {
-                            "json": SCHEMA_JSON,
-                            'value': SCHEMA_VALUE
-                        }
+                        schemas_map = {"json": SCHEMA_JSON, 'value': SCHEMA_VALUE}
                         schema_str = gateway_setup[direction]['schema']
                         try:
                             schema = schemas_map[schema_str]
@@ -73,9 +68,8 @@ class GatewaysConfig():
 
                         params[direction + '_schema'] = schema
                     if 'pattern' in gateway_setup[direction]:
-                        params[
-                            direction +
-                            '_pattern'] = gateway_setup[direction]['pattern']
+                        params[direction +
+                               '_pattern'] = gateway_setup[direction]['pattern']
 
             gw_item = GatewayConfig(**params)
             ret.append(gw_item)

@@ -4,7 +4,7 @@
 from platform import python_version
 import pkg_resources
 
-__version__ = '0.2.1'
+__version__ = '0.2.2rc0'
 
 
 def get_build_info():
@@ -12,10 +12,8 @@ def get_build_info():
     ret = {
         'laporte-mqtt': __version__,
         'python': python_version(),
-        'python-socketio':
-        pkg_resources.get_distribution("python-socketio").version,
-        'python-engineio':
-        pkg_resources.get_distribution("python-engineio").version,
+        'python-socketio': pkg_resources.get_distribution("python-socketio").version,
+        'python-engineio': pkg_resources.get_distribution("python-engineio").version,
         'paho-mqtt': pkg_resources.get_distribution("paho-mqtt").version
     }
     return ret

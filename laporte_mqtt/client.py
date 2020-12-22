@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0411, C0412, C0413, C0103, E1101
 '''client of Socket.IO laporte server and MQTT server'''
 
 import json
@@ -20,15 +19,13 @@ logger = logging.getLogger(__name__)
 MESSAGE_TIME = Summary('laporte_mqtt_message_seconds',
                        'Time spent processing MQTT message', [])
 
-EMIT_COUNT = Counter('laporte_mqtt_emits_total', 'Total count of MQTT emits',
-                     [])
+EMIT_COUNT = Counter('laporte_mqtt_emits_total', 'Total count of MQTT emits', [])
 
 # get parameters from command line arguments
 pars = get_pars()
 
 # set logger
-logging.basicConfig(format='%(levelname)s %(module)s: %(message)s',
-                    level=pars.log_level)
+logging.basicConfig(format='%(levelname)s %(module)s: %(message)s', level=pars.log_level)
 if pars.log_level == logging.DEBUG:
     logging.getLogger('socketio').setLevel(logging.DEBUG)
     logging.getLogger('engineio').setLevel(logging.DEBUG)
@@ -70,11 +67,11 @@ laporte = LaporteClient(pars.sio_addr,
 laporte.ns_metrics.actuator_addr_handler = publish_actuator
 
 
-def on_connect(client, userdata, flags, rc):
+def on_connect(client, userdata, flags, ret):
     '''
     fired upon a successful connection
 
-    rc values:
+    ret values:
     0: Connection successful
     1: Connection refused – incorrect protocol version
     2: Connection refused – invalid client identifier
@@ -83,10 +80,10 @@ def on_connect(client, userdata, flags, rc):
     5: Connection refused – not authorised
     6-255: Currently unused.
     '''
-    if rc == 0:
+    if ret == 0:
         client.connected_flag = True
         logger.info("MQTT connected OK")
-        logger.debug("userdata=%s, flags=%s, rc=%s", userdata, flags, rc)
+        logger.debug("userdata=%s, flags=%s, ret=%s", userdata, flags, ret)
 
         # subscribe mqtt topics
         for gateway in gateways.get():
@@ -96,15 +93,15 @@ def on_connect(client, userdata, flags, rc):
         # connects / reconnects counter
         c_connects_total.labels('mqtt').inc()
     else:
-        logger.error("MQTT connect ERROR: code=%s", rc)
+        logger.error("MQTT connect ERROR: ret=%s", ret)
 
 
-def on_disconnect(client, userdata, rc):
+def on_disconnect(client, userdata, ret):
     '''fired upon a disconnection'''
 
     client.connected_flag = False
     logger.error("MQTT disconnect")
-    logger.debug("userdata=%s, rc=%s", userdata, rc)
+    logger.debug("userdata=%s, ret=%s", userdata, ret)
 
 
 def on_publish(client, userdata, mid):
@@ -125,22 +122,20 @@ def on_message(client, userdata, msg):
 
     for gateway in gateways.get():
         pattern = gateway.subscribe_pattern.format("(.*)", "(.*)")
-        matchObj = re.match(r'{}'.format(pattern), msg.topic)
-        if matchObj:
-            groups = matchObj.groups()
-            if (gateway.subscribe_schema == SCHEMA_JSON) and (
-                    len(groups) == 1):
+        match_obj = re.match(r'{}'.format(pattern), msg.topic)
+        if match_obj:
+            groups = match_obj.groups()
+            if (gateway.subscribe_schema == SCHEMA_JSON) and (len(groups) == 1):
                 node_addr = groups[0]
                 message = {node_addr: json.loads(msg.payload)}
                 break
-            if (gateway.subscribe_schema == SCHEMA_VALUE) and (
-                    len(groups) == 2):
+            if (gateway.subscribe_schema == SCHEMA_VALUE) and (len(groups) == 2):
                 node_addr = groups[0]
                 key = groups[1]
                 message = {node_addr: {key: msg.payload.decode('ascii')}}
                 break
 
-    if matchObj:
+    if match_obj:
         laporte.emit("sensor_addr_response", message)
     else:
         logger.warning("MQTT topic %s not match any gateway", msg.topic)
@@ -155,8 +150,7 @@ def mqtt_loop():
     mqtt_client.on_publish = on_publish
     mqtt_client.on_message = on_message
 
-    logger.info("conecting to mqtt broker (%s:%s)", pars.mqtt_addr,
-                pars.mqtt_port)
+    logger.info("conecting to mqtt broker (%s:%s)", pars.mqtt_addr, pars.mqtt_port)
 
     mqtt_client.connect(pars.mqtt_addr, pars.mqtt_port, pars.mqtt_keepalive)
     mqtt_client.loop_start()
