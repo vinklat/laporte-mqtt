@@ -2,6 +2,7 @@
 '''cmd line argument parser for laporte_mqtt'''
 
 import logging
+import os
 from argparse import ArgumentParser, ArgumentTypeError
 from laporte_mqtt.version import __version__, get_build_info
 
@@ -27,63 +28,111 @@ def log_level_string_to_int(arg_string):
 def get_pars():
     '''get parameters from from command line arguments'''
 
+    env_vars = {
+        'LAPORTE_HOST': {
+            'default': '127.0.0.1'
+        },
+        'LAPORTE_PORT': {
+            'default': 9128
+        },
+        'MQTT_BROKER_HOST': {
+            'default': '127.0.0.1'
+        },
+        'MQTT_BROKER_PORT': {
+            'default': 1883
+        },
+        'MQTT_KEEPALIVE': {
+            'default': 30
+        },
+        'CONFIG_FILE': {
+            'default': 'conf/gateways.yml'
+        },
+        'LISTEN_ADDR': {
+            'default': '0.0.0.0'
+        },
+        'LISTEN_PORT': {
+            'default': 9129
+        },
+        'LOG_LEVEL': {
+            'default': 'DEBUG'
+        },
+    }
+
+    for env_var, env_pars in env_vars.items():
+        if env_var in os.environ:
+            if isinstance(env_pars['default'], bool):
+                env_vars[env_var]['default'] = bool(os.environ[env_var])
+            elif isinstance(env_vars[env_var]['default'], int):
+                env_vars[env_var]['default'] = int(os.environ[env_var])
+            else:
+                env_vars[env_var]['default'] = os.environ[env_var]
+            env_vars[env_var]['required'] = False
+
     parser = ArgumentParser(description='MQTT connector for laporte')
     parser.add_argument('-H',
                         '--laporte-host',
                         action='store',
-                        dest='sio_addr',
-                        help='laporte socket.io host address',
+                        dest='laporte_host',
+                        help='laporte socket.io host address (default {0})'.format(
+                            env_vars['LAPORTE_HOST']['default']),
                         type=str,
-                        default="127.0.0.1")
+                        **env_vars['LAPORTE_HOST'])
     parser.add_argument('-P',
                         '--laporte-port',
                         action='store',
-                        dest='sio_port',
-                        help='laporte socket.io port',
+                        dest='laporte_port',
+                        help='laporte socket.io port (default {0})'.format(
+                            env_vars['LAPORTE_PORT']['default']),
                         type=int,
-                        default=9128)
+                        **env_vars['LAPORTE_PORT'])
     parser.add_argument('-q',
                         '--mqtt-broker-host',
                         action='store',
-                        dest='mqtt_addr',
-                        help='mqtt broker host address',
+                        dest='mqtt_broker_host',
+                        help='mqtt broker host address (default {0})'.format(
+                            env_vars['MQTT_BROKER_HOST']['default']),
                         type=str,
-                        default="127.0.0.1")
+                        **env_vars['MQTT_BROKER_HOST'])
     parser.add_argument('-r',
                         '--mqtt-broker-port',
                         action='store',
-                        dest='mqtt_port',
-                        help='mqtt broker port',
+                        dest='mqtt_broker_port',
+                        help='mqtt broker port (default {0})'.format(
+                            env_vars['MQTT_BROKER_PORT']['default']),
                         type=int,
-                        default=1883)
+                        **env_vars['MQTT_BROKER_PORT'])
     parser.add_argument('-k',
                         '--mqtt-keepalive',
                         action='store',
                         dest='mqtt_keepalive',
-                        help='mqtt keepalive seconds',
+                        help='mqtt keepalive seconds (default {0})'.format(
+                            env_vars['MQTT_KEEPALIVE']['default']),
                         type=int,
-                        default=30)
+                        **env_vars['MQTT_KEEPALIVE'])
     parser.add_argument('-c',
-                        '--gateways-config',
+                        '--gateways-config-file',
                         action='store',
-                        dest='gw_fname',
-                        help='yaml file with mqtt config of gateways',
+                        dest='config_file',
+                        help='yaml file with mqtt config of gateways'
+                        ' (default {0})'.format(env_vars['CONFIG_FILE']['default']),
                         type=str,
-                        default='conf/gateways.yml')
+                        **env_vars['CONFIG_FILE'])
     parser.add_argument('-a',
-                        '--exporter-address',
+                        '--exporter-listen-address',
                         action='store',
-                        dest='addr',
-                        help='prometheus metrics listen address',
+                        dest='listen_addr',
+                        help='prometheus metrics listen address (default {0})'.format(
+                            env_vars['LISTEN_ADDR']['default']),
                         type=str,
-                        default='')
+                        **env_vars['LISTEN_ADDR'])
     parser.add_argument('-p',
-                        '--exporter-port',
+                        '--exporter-listen-port',
                         action='store',
-                        dest='port',
-                        help='prometheus metrics expose port',
+                        dest='listen_port',
+                        help='prometheus metrics expose port (default {0})'.format(
+                            env_vars['LISTEN_PORT']['default']),
                         type=int,
-                        default=9129)
+                        **env_vars['LISTEN_PORT'])
 
     parser.add_argument('-V',
                         '--version',

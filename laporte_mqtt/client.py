@@ -34,7 +34,7 @@ else:
     logging.getLogger('engineio').setLevel(logging.WARNING)
 
 # create cofiguration data container
-gateways = GatewaysConfig(pars.gw_fname)
+gateways = GatewaysConfig(pars.config_file)
 
 # define mqtt client and set client name
 mqtt_client = mqtt.Client('laporte-mqtt_' +
@@ -61,8 +61,8 @@ def publish_actuator(gateway, node_addr, keys):
             mqtt_client.publish(topic, value)
 
 
-laporte = LaporteClient(pars.sio_addr,
-                        pars.sio_port,
+laporte = LaporteClient(pars.laporte_host,
+                        pars.laporte_port,
                         gateways=list(gateways.get_names()))
 laporte.ns_metrics.actuator_addr_handler = publish_actuator
 
@@ -150,9 +150,11 @@ def mqtt_loop():
     mqtt_client.on_publish = on_publish
     mqtt_client.on_message = on_message
 
-    logger.info("conecting to mqtt broker (%s:%s)", pars.mqtt_addr, pars.mqtt_port)
+    logger.info("conecting to mqtt broker (%s:%s)", pars.mqtt_broker_host,
+                pars.mqtt_broker_port)
 
-    mqtt_client.connect(pars.mqtt_addr, pars.mqtt_port, pars.mqtt_keepalive)
+    mqtt_client.connect(pars.mqtt_broker_host, pars.mqtt_broker_port,
+                        pars.mqtt_keepalive)
     mqtt_client.loop_start()
 
     while True:
@@ -169,7 +171,7 @@ def main():
     '''start main loops'''
 
     # start up the server to expose promnetheus metrics.
-    start_http_server(pars.port, addr=pars.addr)
+    start_http_server(pars.listen_port, addr=pars.listen_addr)
 
     thread1 = threading.Thread(target=mqtt_loop)
     thread1.start()
