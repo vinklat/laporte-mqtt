@@ -7,7 +7,7 @@ import time
 from platform import python_version
 import pkg_resources
 
-__version__ = '0.3.0rc0'
+__version__ = '0.3.0'
 app_name = 'laporte-mqtt'
 # pylint: disable=consider-using-f-string
 inst_id = '{0:010x}'.format(int(time.time() * 256))[:10]
