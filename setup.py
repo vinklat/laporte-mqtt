@@ -37,6 +37,5 @@ setuptools.setup(name="laporte-mqtt",
                      "Operating System :: OS Independent",
                  ],
                  entry_points={
-                     'console_scripts':
-                     ['laporte-mqtt=laporte_mqtt.client:main'],
+                     'console_scripts': ['laporte-mqtt=laporte_mqtt.main:main'],
                  })

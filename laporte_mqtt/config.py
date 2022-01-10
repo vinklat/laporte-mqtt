@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=too-many-arguments, too-few-public-methods
-'''objects that collect mqtt prefixes setup for sensors'''
+'''
+Objects that collect mqtt prefixes setup for sensors
+'''
 
+# pylint: disable=too-few-public-methods
 import sys
 import logging
 from yaml import safe_load, YAMLError
@@ -40,7 +42,7 @@ class GatewaysConfig():
         ret = []
 
         try:
-            with open(filename, 'r') as stream:
+            with open(filename, 'r', encoding='utf8') as stream:
                 try:
                     config_dict = safe_load(stream)
                 except YAMLError as exc:
